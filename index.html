@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện Tập Toán 10 - Phương Trình Đường Thẳng</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .option-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        /* Hover effect only when not answered yet */
+        .option-card:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-color: #3b82f6;
+        }
+
+        .option-card.correct {
+            background-color: #ecfdf5;
+            border-color: #10b981;
+            color: #065f46;
+            box-shadow: 0 0 0 2px #10b981;
+        }
+
+        .option-card.wrong {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+            opacity: 0.7;
+        }
+        
+        .disabled {
+            pointer-events: none;
+        }
+
+        /* Animation for hint button */
+        @keyframes pulse-attention {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        .hint-btn-attention {
+            animation: pulse-attention 2s infinite;
+        }
+        
+        /* Custom scrollbar for rationale */
+        .rationale-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .rationale-content::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .rationale-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg shadow-md">
+                    <i class="fa-solid fa-square-root-variable fa-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl text-gray-800 leading-tight">Luyện Tập Toán</h1>
+                    <p class="text-xs text-gray-500">Chuyên đề: Phương trình đường thẳng</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-semibold text-gray-600">Điểm số</div>
+                    <div class="text-xl font-bold text-blue-600"><span id="score">0</span>/10</div>
+                </div>
+                <button onclick="resetQuiz()" class="text-gray-400 hover:text-blue-600 transition-colors p-2" title="Làm lại">
+                    <i class="fa-solid fa-rotate-right fa-lg"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Progress Bar -->
+        <div class="h-1.5 w-full bg-gray-100">
+            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-6 max-w-3xl">
+        
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="bg-white rounded-2xl shadow-lg p-8 text-center fade-in border-t-4 border-blue-500">
+            <div class="mb-6">
+                <img src="https://img.freepik.com/free-vector/mathematics-concept-illustration_114360-3972.jpg?w=740" alt="Math Illustration" class="w-64 mx-auto opacity-90">
+            </div>
+            <h2 class="text-3xl font-extrabold mb-2 text-gray-800">Bài Tập: Phương Trình Đường Thẳng</h2>
+            <p class="text-xl font-bold text-blue-600 mb-6">GV: Nguyễn Đình Nguyên</p>
+            <p class="text-gray-600 mb-8 max-w-md mx-auto text-lg">Bài tập trắc nghiệm giúp củng cố kiến thức về vectơ chỉ phương, vectơ pháp tuyến, phương trình tham số, tổng quát.</p>
+            <button onclick="startQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-full shadow-lg transform transition hover:-translate-y-1 text-lg">
+                Bắt đầu làm bài <i class="fa-solid fa-play ml-2"></i>
+            </button>
+        </div>
+
+        <!-- Quiz Container (Hidden initially) -->
+        <div id="quiz-container" class="hidden">
+            <!-- Question Card -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 fade-in relative">
+                
+                <!-- Top Question Info -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <span class="font-extrabold text-gray-500 text-sm uppercase tracking-wider">Câu hỏi <span id="current-q-num">1</span>/<span id="total-q-num">10</span></span>
+                    <span class="text-xs font-bold px-3 py-1 bg-blue-100 text-blue-700 rounded-full border border-blue-200">Trắc nghiệm</span>
+                </div>
+
+                <!-- Question Text -->
+                <div class="p-6 md:p-8">
+                    <div id="question-text" class="text-xl md:text-2xl font-bold text-gray-800 mb-8 leading-relaxed">
+                        <!-- Content will be injected here -->
+                    </div>
+
+                    <!-- Hint Button (Prominent) -->
+                     <div class="mb-6 flex justify-end">
+                        <button id="hint-btn" onclick="toggleHint()" class="hint-btn-attention bg-amber-100 hover:bg-amber-200 text-amber-700 border-2 border-amber-300 font-bold py-3 px-6 rounded-xl transition-all flex items-center shadow-sm text-base">
+                            <i class="fa-solid fa-lightbulb mr-2 text-amber-500 text-xl"></i> Xem Gợi ý
+                        </button>
+                    </div>
+
+                     <!-- Hint Box -->
+                    <div id="hint-box" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg animate-slide-down shadow-inner">
+                        <div class="flex items-start">
+                            <div class="mr-3 mt-1">
+                                <i class="fa-solid fa-circle-info text-amber-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-amber-800 text-lg mb-1">Gợi ý:</p>
+                                <p id="hint-text" class="text-amber-900 text-base"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Options Grid -->
+                    <div id="options-container" class="grid grid-cols-1 gap-4">
+                        <!-- Options will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Action Area (Prev/Next Buttons) -->
+                <div class="px-6 py-5 bg-gray-50 border-t border-gray-100 flex justify-between items-center min-h-[80px]">
+                     <button id="prev-btn" onclick="prevQuestion()" class="hidden bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold py-3 px-6 rounded-xl shadow-sm transition-all items-center text-lg">
+                        <i class="fa-solid fa-arrow-left mr-2"></i> Câu trước
+                    </button>
+                    
+                    <button id="next-btn" onclick="nextQuestion()" class="hidden bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all items-center text-lg transform hover:scale-105 ml-auto">
+                        Câu tiếp theo <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Rationale Box (Solution) -->
+                <div id="rationale-box" class="hidden bg-green-50 border-t-2 border-green-500 p-6 animate-slide-up">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-green-100 rounded-full p-2 mr-4">
+                            <i class="fa-solid fa-check text-green-600 text-xl"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-green-800 text-lg mb-2">Chính xác! Lời giải chi tiết:</h3>
+                            <div id="rationale-text" class="text-gray-800 text-base rationale-content leading-relaxed">
+                                <!-- Rationale content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <!-- Wrong Answer Box -->
+                 <div id="wrong-box" class="hidden bg-red-50 border-t-2 border-red-500 p-6 animate-slide-up">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-red-100 rounded-full p-2 mr-4">
+                            <i class="fa-solid fa-xmark text-red-600 text-xl"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-red-800 text-lg mb-2">Chưa chính xác</h3>
+                            <p class="text-red-700 text-base mb-3 bg-white p-3 rounded border border-red-100 inline-block shadow-sm">
+                                Đáp án đúng là: <span id="correct-answer-label" class="font-bold text-green-700 text-lg"></span>
+                            </p>
+                            <div id="wrong-rationale-text" class="text-gray-800 text-base rationale-content leading-relaxed mt-2 pt-2 border-t border-red-200">
+                                <!-- Rationale content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div id="completion-screen" class="hidden text-center bg-white rounded-2xl shadow-lg p-8 fade-in border-t-4 border-yellow-400">
+            <div class="mb-4 inline-block p-6 rounded-full bg-yellow-50 shadow-inner">
+                <i class="fa-solid fa-trophy text-6xl text-yellow-500"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Kết quả bài làm</h2>
+            <p class="text-gray-600 mb-6 text-xl">Bạn đã trả lời đúng <span id="final-score" class="font-bold text-blue-600 text-2xl"></span> trên tổng số <span id="total-questions-final" class="font-bold"></span> câu.</p>
+            
+            <!-- Analysis Section -->
+            <div id="feedback-container" class="mb-8 text-left bg-gray-50 rounded-xl p-6 border border-gray-100">
+                <!-- Feedback content will be injected here -->
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button onclick="resetQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition transform hover:-translate-y-1">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Làm lại bài
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-gray-400 text-xs">
+        <p>Công cụ hỗ trợ học tập môn Toán</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Quiz Data extracted from the provided PDF content
+        // Added 'topic' field for analysis
+        const quizData = [
+            {
+                id: 1,
+                topic: "Vectơ chỉ phương & Pháp tuyến",
+                question: "Một vectơ chỉ phương của đường thẳng $\\begin{cases}x=2+3t\\\\ y=-3-t\\end{cases}$ là:",
+                options: [
+                    { text: "$\\vec{u}=(2;-3)$", correct: false },
+                    { text: "$\\vec{u}=(3;-1)$", correct: true },
+                    { text: "$\\vec{u}=(3;1)$", correct: false },
+                    { text: "$\\vec{u}=(3;-3)$", correct: false }
+                ],
+                hint: "Với phương trình tham số $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$, vectơ chỉ phương là $\\vec{u}=(a;b)$.",
+                rationale: "Phương trình đường thẳng có dạng $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$ với $a=3, b=-1$.<br>Do đó, vectơ chỉ phương là $\\vec{u}=(3; -1)$."
+            },
+            {
+                id: 3,
+                topic: "Phương trình tham số",
+                question: "Trong mặt phẳng tọa độ $Oxy$, đường thẳng $d$ đi qua điểm $A(1;-2)$ và có vectơ chỉ phương $\\vec{u}=(3;5)$ có phương trình tham số là:",
+                options: [
+                    { text: "$\\begin{cases}x=3+2t\\\\ y=5+t\\end{cases}$", correct: false },
+                    { text: "$\\begin{cases}x=3+t\\\\ y=5-2t\\end{cases}$", correct: false },
+                    { text: "$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$", correct: true },
+                    { text: "$\\begin{cases}x=1+5t\\\\ y=-2-3t\\end{cases}$", correct: false }
+                ],
+                hint: "Phương trình tham số đi qua $M(x_0; y_0)$ với vtcp $\\vec{u}=(a;b)$ là $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$.",
+                rationale: "Thay tọa độ điểm đi qua $(1; -2)$ và vectơ chỉ phương $(3; 5)$ vào công thức tổng quát, ta được:<br>$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$."
+            },
+            {
+                id: 4,
+                topic: "Vectơ chỉ phương & Pháp tuyến",
+                question: "Một vectơ pháp tuyến của đường thẳng $2x-3y+6=0$ là:",
+                options: [
+                    { text: "$\\vec{n}=(2;-3)$", correct: true },
+                    { text: "$\\vec{n}=(2;3)$", correct: false },
+                    { text: "$\\vec{n}=(3;2)$", correct: false },
+                    { text: "$\\vec{n}=(-3;2)$", correct: false }
+                ],
+                hint: "Đường thẳng có phương trình tổng quát $Ax + By + C = 0$ có vectơ pháp tuyến là $\\vec{n}=(A; B)$.",
+                rationale: "Từ phương trình $2x - 3y + 6 = 0$, ta có hệ số của $x$ là $2$ và hệ số của $y$ là $-3$.<br>Vậy vectơ pháp tuyến là $\\vec{n}=(2; -3)$."
+            },
+            {
+                id: 5,
+                topic: "Vectơ chỉ phương & Pháp tuyến",
+                question: "Cho đường thẳng $\\Delta$ có phương trình tổng quát $-2x+3y-1=0$. Vectơ nào sau đây là vectơ chỉ phương của đường thẳng $\\Delta$?",
+                options: [
+                    { text: "$(3;2)$", correct: true },
+                    { text: "$(2;3)$", correct: false },
+                    { text: "$(-3;2)$", correct: false },
+                    { text: "$(2;-3)$", correct: false }
+                ],
+                hint: "Nếu đường thẳng có vtpt $\\vec{n}=(A; B)$ thì vtcp là $\\vec{u}=(-B; A)$ hoặc $\\vec{u}=(B; -A)$.",
+                rationale: "Đường thẳng có vtpt $\\vec{n}=(-2; 3)$.<br>Suy ra vtcp $\\vec{u}=(3; 2)$ (vì tích vô hướng $\\vec{n}.\\vec{u} = -2.3 + 3.2 = 0$)."
+            },
+            {
+                id: 6,
+                topic: "Điểm thuộc đường thẳng",
+                question: "Cho đường thẳng $d: 3x+5y-15=0$. Trong các điểm sau đây, điểm nào **không** thuộc đường thẳng $d$?",
+                options: [
+                    { text: "$M_1(5;0)$", correct: false },
+                    { text: "$M_4(-5;6)$", correct: false },
+                    { text: "$M_2(0;3)$", correct: false },
+                    { text: "$M_3(5;3)$", correct: true }
+                ],
+                hint: "Thay tọa độ $(x; y)$ của điểm vào phương trình. Nếu kết quả $\\neq 0$ thì điểm đó không thuộc đường thẳng.",
+                rationale: "Thay tọa độ $M_3(5;3)$ vào vế trái phương trình:<br>$3(5) + 5(3) - 15 = 15 + 15 - 15 = 15 \\neq 0$.<br>Vậy $M_3$ không thuộc $d$."
+            },
+            {
+                id: 7,
+                topic: "Khoảng cách & Góc",
+                question: "Khoảng cách từ điểm $M(4;-2)$ đến đường thẳng $\\Delta: x-2y+2=0$ bằng:",
+                options: [
+                    { text: "$\\frac{2\\sqrt{5}}{5}$", correct: false },
+                    { text: "$2\\sqrt{5}$", correct: true },
+                    { text: "$2$", correct: false },
+                    { text: "$\\sqrt{5}$", correct: false }
+                ],
+                hint: "Công thức khoảng cách: $d(M, \\Delta) = \\frac{|Ax_0 + By_0 + C|}{\\sqrt{A^2 + B^2}}$.",
+                rationale: "Áp dụng công thức khoảng cách:<br>$$d = \\frac{|1(4) - 2(-2) + 2|}{\\sqrt{1^2 + (-2)^2}} = \\frac{|4 + 4 + 2|}{\\sqrt{5}} = \\frac{10}{\\sqrt{5}} = 2\\sqrt{5}$$"
+            },
+            {
+                id: 8,
+                topic: "Khoảng cách & Góc",
+                question: "Cho $\\Delta_1: x-2y+3=0$ và $\\Delta_2: -2x-y+5=0$. Số đo góc giữa hai đường thẳng này là:",
+                options: [
+                    { text: "$30^\\circ$", correct: false },
+                    { text: "$45^\\circ$", correct: false },
+                    { text: "$90^\\circ$", correct: true },
+                    { text: "$60^\\circ$", correct: false }
+                ],
+                hint: "Tính tích vô hướng hai vectơ pháp tuyến $\\vec{n_1}$ và $\\vec{n_2}$. Nếu bằng 0 thì hai đường thẳng vuông góc.",
+                rationale: "Ta có $\\vec{n_1}=(1; -2)$ và $\\vec{n_2}=(-2; -1)$.<br>Tích vô hướng: $\\vec{n_1}.\\vec{n_2} = 1.(-2) + (-2).(-1) = -2 + 2 = 0$.<br>Vì tích vô hướng bằng 0 nên hai vectơ vuông góc, suy ra góc giữa hai đường thẳng là $90^\\circ$."
+            },
+            {
+                id: 9,
+                topic: "Phương trình tham số",
+                question: "Trong mặt phẳng tọa độ $Oxy$, phương trình tham số của đường thẳng đi qua $M(1;-2)$ và $N(4;3)$ là:",
+                options: [
+                    { text: "$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$", correct: true },
+                    { text: "$\\begin{cases}x=1+5t\\\\ y=-2-3t\\end{cases}$", correct: false },
+                    { text: "$\\begin{cases}x=3+3t\\\\ y=4+5t\\end{cases}$", correct: false },
+                    { text: "$\\begin{cases}x=4+t\\\\ y=3-2t\\end{cases}$", correct: false }
+                ],
+                hint: "Vectơ chỉ phương chính là vectơ $\\vec{MN} = (x_N - x_M; y_N - y_M)$.",
+                rationale: "Vectơ chỉ phương $\\vec{u} = \\vec{MN} = (4-1; 3-(-2)) = (3; 5)$.<br>Đường thẳng đi qua $M(1; -2)$ với vtcp $(3; 5)$ có pt: $\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$."
+            },
+            {
+                id: 10,
+                topic: "Phương trình tổng quát",
+                question: "Trong mặt phẳng $Oxy$, đường thẳng $\\Delta$ đi qua điểm $M(-2;0)$ và song song với đường thẳng $d: 2x-y+2=0$ có phương trình là:",
+                options: [
+                    { text: "$2x-y=0$", correct: false },
+                    { text: "$2x-y+4=0$", correct: true },
+                    { text: "$2x+y+4=0$", correct: false },
+                    { text: "$x+2y+2=0$", correct: false }
+                ],
+                hint: "Hai đường thẳng song song thì có cùng vectơ pháp tuyến. Phương trình sẽ có dạng $2x - y + C = 0$ ($C \\neq 2$).",
+                rationale: "Vì $\\Delta // d$ nên $\\Delta$ có dạng $2x - y + c = 0$.<br>Vì $M(-2; 0) \\in \\Delta$, thay tọa độ vào: $2(-2) - 0 + c = 0 \\Rightarrow -4 + c = 0 \\Rightarrow c = 4$.<br>Vậy pt là $2x - y + 4 = 0$."
+            },
+            {
+                id: 11,
+                topic: "Phương trình tổng quát",
+                question: "Đường thẳng đi qua điểm $M(2;-3)$ và nhận $\\vec{n}=(3;1)$ làm vectơ pháp tuyến có phương trình tổng quát là:",
+                options: [
+                    { text: "$3x+y-9=0$", correct: false },
+                    { text: "$x-3y-11=0$", correct: false },
+                    { text: "$3x+y-3=0$", correct: true },
+                    { text: "$3x-y-9=0$", correct: false }
+                ],
+                hint: "Áp dụng công thức: $A(x - x_0) + B(y - y_0) = 0$.",
+                rationale: "Phương trình: $3(x - 2) + 1(y - (-3)) = 0$<br>$\\Leftrightarrow 3x - 6 + y + 3 = 0$<br>$\\Leftrightarrow 3x + y - 3 = 0$."
+            },
+            {
+                id: 12,
+                topic: "Phương trình tổng quát",
+                question: "Trong mặt phẳng $Oxy$, cho hai điểm $A(-2;4)$ và $B(-6;1)$. Phương trình đường thẳng đi qua hai điểm A và B là:",
+                options: [
+                    { text: "$3x-4y-22=0$", correct: false },
+                    { text: "$3x-4y+8=0$", correct: false },
+                    { text: "$3x-4y+22=0$", correct: true },
+                    { text: "$3x+4y-10=0$", correct: false }
+                ],
+                hint: "Tìm vectơ $\\vec{AB}$, suy ra vectơ pháp tuyến $\\vec{n}$, sau đó viết phương trình tổng quát.",
+                rationale: "Ta có $\\vec{AB} = (-4; -3)$.<br>Suy ra vectơ pháp tuyến $\\vec{n} = (3; -4)$ (đảo vị trí và đổi dấu 1 thành phần).<br>Phương trình qua $A(-2; 4)$: $3(x - (-2)) - 4(y - 4) = 0$<br>$\\Leftrightarrow 3x + 6 - 4y + 16 = 0$<br>$\\Leftrightarrow 3x - 4y + 22 = 0$."
+            }
+        ];
+
+        // State variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+        let userAnswers = new Array(quizData.length).fill(null); // Store user answers
+        
+        // DOM Elements
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizContainer = document.getElementById('quiz-container');
+        const completionScreen = document.getElementById('completion-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const currentQNum = document.getElementById('current-q-num');
+        const totalQNum = document.getElementById('total-q-num');
+        const scoreDisplay = document.getElementById('score');
+        const progressBar = document.getElementById('progress-bar');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn'); // Previous button
+        const hintBtn = document.getElementById('hint-btn');
+        const hintBox = document.getElementById('hint-box');
+        const hintText = document.getElementById('hint-text');
+        const rationaleBox = document.getElementById('rationale-box');
+        const rationaleText = document.getElementById('rationale-text');
+        const wrongBox = document.getElementById('wrong-box');
+        const wrongRationaleText = document.getElementById('wrong-rationale-text');
+        const correctAnswerLabel = document.getElementById('correct-answer-label');
+        const feedbackContainer = document.getElementById('feedback-container');
+        
+        // --- Web Audio API Replacement for Sound ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return; // Browser doesn't support Web Audio API
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                // Sound: Pleasant Chime (Major Triad: C5, E5, G5)
+                const frequencies = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                
+                frequencies.forEach((freq, index) => {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+
+                    oscillator.type = 'sine'; // Sine wave for bell-like sound
+                    oscillator.frequency.value = freq;
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    // Envelope for bell sound (Fast attack, long decay)
+                    const volume = 0.15; // Volume control
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
+                    // Decay time slightly different for each harmonic to sound natural
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.8 + (index * 0.1)); 
+
+                    oscillator.start(now);
+                    oscillator.stop(now + 1.5);
+                });
+
+            } else {
+                // Sound: Soft "Thud" / Failure sound
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'triangle'; // Triangle is softer than sawtooth
+                oscillator.frequency.setValueAtTime(200, now);
+                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.4); // Pitch drop
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                // Short, percussive envelope
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.2, now + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                oscillator.start(now);
+                oscillator.stop(now + 0.5);
+            }
+        }
+        // -------------------------------------------
+
+        // Functions
+        function startQuiz() {
+            initAudio(); // Initialize audio context on first user interaction
+            welcomeScreen.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            totalQNum.textContent = quizData.length;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const data = quizData[currentQuestionIndex];
+            
+            // Check if this question was already answered
+            const savedAnswerIndex = userAnswers[currentQuestionIndex];
+            answered = savedAnswerIndex !== null;
+            
+            // Update UI Info
+            currentQNum.textContent = currentQuestionIndex + 1;
+            const progressPercent = ((currentQuestionIndex) / quizData.length) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+            
+            // Reset UI Visibility
+            hintBox.classList.add('hidden');
+            rationaleBox.classList.add('hidden');
+            wrongBox.classList.add('hidden');
+            
+            // Previous Button Logic
+            if (currentQuestionIndex > 0) {
+                prevBtn.classList.remove('hidden');
+            } else {
+                prevBtn.classList.add('hidden');
+            }
+
+            // Next Button / Hint Logic
+            if (answered) {
+                // If answered, show Next button (so user can move forward) and disable Hint
+                nextBtn.classList.remove('hidden');
+                hintBtn.disabled = true;
+                hintBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                // Show relevant solution box
+                const isCorrect = data.options[savedAnswerIndex].correct;
+                if (isCorrect) {
+                    rationaleText.innerHTML = data.rationale;
+                    rationaleBox.classList.remove('hidden');
+                } else {
+                    const correctOpt = data.options.find(o => o.correct);
+                    correctAnswerLabel.innerHTML = correctOpt.text;
+                    wrongRationaleText.innerHTML = data.rationale;
+                    wrongBox.classList.remove('hidden');
+                }
+            } else {
+                // If not answered, hide Next button and enable Hint
+                nextBtn.classList.add('hidden');
+                hintBtn.disabled = false;
+                hintBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Load content
+            questionText.innerHTML = data.question;
+            
+            // Render Options
+            optionsContainer.innerHTML = '';
+            data.options.forEach((opt, index) => {
+                const button = document.createElement('div');
+                // Basic classes
+                let classes = 'option-card bg-white border-2 border-gray-100 rounded-xl p-5 flex items-center shadow-sm';
+                let labelClasses = 'w-10 h-10 rounded-full bg-gray-100 text-gray-600 font-bold flex items-center justify-center mr-5 flex-shrink-0 border border-gray-200 option-label text-lg';
+                let checkIconOpacity = 'opacity-0';
+                let iconHtml = '<i class="fa-solid fa-circle-check fa-xl"></i>';
+                
+                // If answered, apply styles immediately
+                if (answered) {
+                    classes += ' disabled'; // Prevent clicking
+                    const isSelected = index === savedAnswerIndex;
+                    
+                    if (opt.correct) {
+                        // Highlight Correct Answer (whether selected or not)
+                        classes += ' correct';
+                        labelClasses = labelClasses.replace('bg-gray-100', 'bg-green-100').replace('text-gray-600', 'text-green-700');
+                        checkIconOpacity = 'opacity-100';
+                    } else if (isSelected && !opt.correct) {
+                         // Highlight Wrong Selected Answer
+                        classes += ' wrong';
+                        labelClasses = labelClasses.replace('bg-gray-100', 'bg-red-100').replace('text-gray-600', 'text-red-700');
+                        iconHtml = '<i class="fa-solid fa-circle-xmark fa-xl"></i>';
+                        checkIconOpacity = 'opacity-100 text-red-600';
+                    }
+                }
+
+                button.className = classes;
+                button.onclick = () => selectAndCheck(index);
+                button.dataset.index = index;
+                
+                // Option Label (A, B, C, D)
+                const labels = ['A', 'B', 'C', 'D'];
+                
+                button.innerHTML = `
+                    <div class="${labelClasses}">
+                        ${labels[index]}
+                    </div>
+                    <div class="text-gray-700 font-bold text-lg option-content">${opt.text}</div>
+                    <div class="ml-auto ${checkIconOpacity} check-icon text-green-600">
+                        ${iconHtml}
+                    </div>
+                `;
+                optionsContainer.appendChild(button);
+            });
+
+            // Trigger MathJax
+            if(window.MathJax) {
+                MathJax.typesetPromise([questionText, optionsContainer, rationaleBox, wrongBox]).then(() => {});
+            }
+        }
+
+        function toggleHint() {
+            const data = quizData[currentQuestionIndex];
+            hintText.innerHTML = data.hint;
+            hintBox.classList.toggle('hidden');
+            if(window.MathJax) {
+                MathJax.typesetPromise([hintBox]);
+            }
+        }
+
+        function selectAndCheck(index) {
+            if (answered) return;
+            
+            answered = true;
+            userAnswers[currentQuestionIndex] = index; // Save answer
+            
+            nextBtn.classList.remove('hidden');
+            hintBtn.disabled = true;
+            hintBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const data = quizData[currentQuestionIndex];
+            const isCorrect = data.options[index].correct;
+            const options = document.querySelectorAll('.option-card');
+
+            // Style options
+            options.forEach((opt, idx) => {
+                opt.classList.add('disabled'); // Disable clicking
+                
+                // Highlight correct answer
+                if (data.options[idx].correct) {
+                    opt.classList.add('correct');
+                    opt.querySelector('.option-label').classList.replace('bg-gray-100', 'bg-green-100');
+                    opt.querySelector('.option-label').classList.replace('text-gray-600', 'text-green-700');
+                    opt.querySelector('.check-icon').classList.remove('opacity-0');
+                    opt.querySelector('.check-icon').classList.add('opacity-100');
+                } 
+                
+                // Highlight user's wrong choice
+                if (idx === index && !isCorrect) {
+                    opt.classList.add('wrong');
+                    opt.querySelector('.option-label').classList.replace('bg-gray-100', 'bg-red-100');
+                    opt.querySelector('.option-label').classList.replace('text-gray-600', 'text-red-700');
+                    opt.querySelector('.check-icon').innerHTML = '<i class="fa-solid fa-circle-xmark fa-xl"></i>';
+                    opt.querySelector('.check-icon').classList.replace('text-green-600', 'text-red-600');
+                    opt.querySelector('.check-icon').classList.remove('opacity-0');
+                    opt.querySelector('.check-icon').classList.add('opacity-100');
+                }
+            });
+
+            // Handle Logic & Sounds
+            if (isCorrect) {
+                score++;
+                scoreDisplay.textContent = score;
+                // Play Correct Sound
+                playSound('correct');
+
+                // Show Rationale
+                rationaleText.innerHTML = data.rationale;
+                rationaleBox.classList.remove('hidden');
+                MathJax.typesetPromise([rationaleBox]);
+            } else {
+                // Play Wrong Sound
+                playSound('wrong');
+
+                // Show Wrong Box with Correct Answer info and Rationale
+                const correctOpt = data.options.find(o => o.correct);
+                correctAnswerLabel.innerHTML = correctOpt.text;
+                wrongRationaleText.innerHTML = data.rationale;
+                wrongBox.classList.remove('hidden');
+                MathJax.typesetPromise([wrongBox]);
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showCompletion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+
+        function showCompletion() {
+            quizContainer.classList.add('hidden');
+            completionScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('total-questions-final').textContent = quizData.length;
+            progressBar.style.width = '100%';
+
+            // --- Generate Feedback Logic ---
+            let weakTopics = new Set();
+            quizData.forEach((q, index) => {
+                const userAnsIndex = userAnswers[index];
+                // Check if wrong or unanswered
+                const isCorrect = userAnsIndex !== null && q.options[userAnsIndex].correct;
+                if (!isCorrect) {
+                    weakTopics.add(q.topic);
+                }
+            });
+
+            let feedbackHtml = '';
+            
+            // General Comment based on score
+            if (score >= 9) {
+                feedbackHtml += `
+                    <div class="flex items-center mb-4 text-green-700">
+                        <i class="fa-solid fa-star text-2xl mr-3"></i>
+                        <h3 class="font-bold text-lg">Xuất sắc! Bạn nắm rất vững kiến thức.</h3>
+                    </div>
+                    <p class="mb-4 text-gray-700">Bạn đã hoàn thành bài tập với kết quả tuyệt vời. Hãy duy trì phong độ này nhé!</p>
+                `;
+            } else if (score >= 7) {
+                feedbackHtml += `
+                    <div class="flex items-center mb-4 text-blue-700">
+                        <i class="fa-solid fa-thumbs-up text-2xl mr-3"></i>
+                        <h3 class="font-bold text-lg">Khá tốt! Tuy nhiên vẫn còn một vài lỗi nhỏ.</h3>
+                    </div>
+                    <p class="mb-4 text-gray-700">Bạn đã hiểu bài nhưng cần cẩn thận hơn trong tính toán và đọc đề.</p>
+                `;
+            } else if (score >= 5) {
+                feedbackHtml += `
+                    <div class="flex items-center mb-4 text-yellow-600">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl mr-3"></i>
+                        <h3 class="font-bold text-lg">Kết quả trung bình. Cần ôn tập thêm.</h3>
+                    </div>
+                    <p class="mb-4 text-gray-700">Bạn đã nắm được một số ý chính nhưng vẫn còn lỗ hổng kiến thức.</p>
+                `;
+            } else {
+                feedbackHtml += `
+                    <div class="flex items-center mb-4 text-red-600">
+                        <i class="fa-solid fa-book-open text-2xl mr-3"></i>
+                        <h3 class="font-bold text-lg">Cần cố gắng nhiều hơn!</h3>
+                    </div>
+                    <p class="mb-4 text-gray-700">Đừng nản lòng, hãy xem lại kỹ lý thuyết trong sách giáo khoa trước khi làm lại bài nhé.</p>
+                `;
+            }
+
+            // Recommendations based on weak topics
+            if (weakTopics.size > 0) {
+                feedbackHtml += `<div class="mt-6 border-t border-gray-200 pt-4">
+                    <p class="font-bold text-gray-800 mb-3"><i class="fa-solid fa-clipboard-list mr-2 text-blue-500"></i>Gợi ý nội dung cần ôn tập:</p>
+                    <ul class="space-y-2">`;
+                
+                weakTopics.forEach(topic => {
+                    feedbackHtml += `
+                        <li class="flex items-start text-gray-700 bg-white p-3 rounded shadow-sm border border-gray-100">
+                            <i class="fa-solid fa-arrow-right text-red-400 mt-1 mr-3 text-sm"></i>
+                            <span>Ôn lại chuyên đề: <strong>${topic}</strong></span>
+                        </li>`;
+                });
+                feedbackHtml += `</ul></div>`;
+            } else {
+                 feedbackHtml += `<div class="mt-6 border-t border-gray-200 pt-4">
+                    <p class="font-bold text-gray-800 mb-2"><i class="fa-solid fa-heart mr-2 text-pink-500"></i>Bạn không có câu sai nào!</p>
+                    <p class="text-sm text-gray-600">Tuyệt vời, kiến thức của bạn ở phần này đã rất vững chắc.</p>
+                </div>`;
+            }
+
+            feedbackContainer.innerHTML = feedbackHtml;
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreDisplay.textContent = '0';
+            userAnswers = new Array(quizData.length).fill(null); // Reset answers
+            completionScreen.classList.add('hidden');
+            if (!welcomeScreen.classList.contains('hidden')) {
+                 // Do nothing if already on start screen
+            } else {
+                 startQuiz();
+            }
+        }
+
+    </script>
+</body>
+</html>
