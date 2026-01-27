@@ -56,6 +56,11 @@
             50% { opacity: 0.8; transform: scale(1.1); }
         }
         .ai-sparkle { animation: sparkle 1.5s infinite; }
+        
+        /* Topic Card Styles */
+        .topic-card { transition: all 0.2s ease; }
+        .topic-card:hover:not(.locked) { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .topic-card.locked { opacity: 0.7; cursor: not-allowed; background-color: #f9fafb; }
     </style>
 </head>
 <body class="h-screen flex flex-col text-gray-800 overflow-hidden">
@@ -63,17 +68,17 @@
     <!-- Header (Compact) -->
     <header class="bg-white shadow-sm z-20 flex-none">
         <div class="max-w-5xl mx-auto px-4 py-2 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="goHome()">
                 <div class="bg-blue-600 text-white p-1.5 rounded-lg shadow-sm">
-                    <i class="fa-solid fa-robot"></i>
+                    <i class="fa-solid fa-graduation-cap"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-base text-gray-800 leading-tight">Luyện Tập Toán AI</h1>
+                    <h1 class="font-bold text-base text-gray-800 leading-tight">Ôn Thi Toán 10</h1>
                     <p class="text-[10px] text-gray-500">GV: Nguyễn Đình Nguyên</p>
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                <div class="text-right hidden sm:block">
+                <div id="score-area" class="text-right hidden sm:block hidden">
                     <div class="text-xs font-semibold text-gray-500">Điểm</div>
                     <div class="text-lg font-bold text-blue-600 leading-none"><span id="score">0</span>/<span id="total-header">10</span></div>
                 </div>
@@ -81,7 +86,7 @@
                 <button onclick="openSettings()" class="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="Cài đặt API Key">
                     <i class="fa-solid fa-gear"></i>
                 </button>
-                <button onclick="resetToOriginal()" class="text-gray-400 hover:text-blue-600 transition-colors p-1.5" title="Về đề gốc">
+                <button id="home-btn" onclick="goHome()" class="text-gray-400 hover:text-blue-600 transition-colors p-1.5 hidden" title="Về màn hình chính">
                     <i class="fa-solid fa-house"></i>
                 </button>
             </div>
@@ -92,8 +97,8 @@
     </header>
 
     <!-- Main Content (Scrollable Area) -->
-    <main class="flex-grow overflow-y-auto bg-gray-50">
-        <div class="container mx-auto px-2 py-3 max-w-4xl h-full flex flex-col justify-center relative">
+    <main class="flex-grow overflow-y-auto bg-gray-50 relative">
+        <div class="container mx-auto px-2 py-3 max-w-4xl h-full flex flex-col relative">
         
             <!-- API Key Modal -->
             <div id="settings-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -122,7 +127,7 @@
                 <p class="text-gray-500 text-sm animate-pulse" id="loading-text">Đang đọc hiểu kiến thức...</p>
             </div>
 
-            <!-- Welcome Screen -->
+            <!-- 1. WELCOME SCREEN (New) -->
             <div id="welcome-screen" class="bg-white rounded-xl shadow-md p-6 text-center fade-in border-t-4 border-blue-500 max-w-lg mx-auto my-auto">
                 <div class="mb-4 relative group">
                     <img 
@@ -136,17 +141,29 @@
                         <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI
                     </div>
                 </div>
-                <h2 class="text-2xl font-bold mb-1 text-gray-800">Phương Trình Đường Thẳng</h2>
+                <h2 class="text-2xl font-bold mb-1 text-gray-800">Luyện Tập Toán 10</h2>
                 <p class="text-sm font-semibold text-blue-600 mb-4">GV: Nguyễn Đình Nguyên</p>
                 <p class="text-gray-600 mb-6 text-sm">Hệ thống bài tập thông minh hỗ trợ bởi AI. Tạo đề mới không giới hạn.</p>
-                <button onclick="startQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-8 rounded-full shadow-md transform transition hover:-translate-y-0.5 text-base">
+                <button onclick="enterApp()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-8 rounded-full shadow-md transform transition hover:-translate-y-0.5 text-base">
                     Bắt đầu ngay <i class="fa-solid fa-play ml-1"></i>
                 </button>
             </div>
 
-            <!-- Quiz Container -->
+            <!-- 2. HOME SCREEN (Topic List) -->
+            <div id="home-screen" class="hidden fade-in w-full max-w-3xl mx-auto py-6">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Chọn chủ đề luyện tập</h2>
+                    <p class="text-gray-500 text-sm">Danh sách các bài tập hiện có</p>
+                </div>
+                
+                <div id="topic-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Topics will be injected here via JS -->
+                </div>
+            </div>
+
+            <!-- 3. Quiz Container (Hidden initially) -->
             <div id="quiz-container" class="hidden h-full flex flex-col justify-center">
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 fade-in relative flex flex-col max-h-full">
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200 fade-in relative flex flex-col max-h-full h-full md:h-auto">
                     
                     <!-- AI Tag if Generated -->
                     <div id="ai-indicator" class="hidden absolute top-0 right-0 bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-bl-md border-l border-b border-purple-200 z-10">
@@ -156,7 +173,10 @@
                     <!-- Info Bar -->
                     <div class="bg-gray-50 px-4 py-2 border-b border-gray-100 flex justify-between items-center rounded-t-xl flex-none">
                         <span class="font-bold text-gray-500 text-xs uppercase tracking-wider">Câu <span id="current-q-num">1</span>/<span id="total-q-num">10</span></span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">Trắc nghiệm</span>
+                        <div class="flex gap-2">
+                            <span id="topic-badge" class="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-600 rounded border border-gray-200 truncate max-w-[150px]">Chủ đề</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">Trắc nghiệm</span>
+                        </div>
                     </div>
 
                     <!-- Content (Scrollable inner) -->
@@ -234,8 +254,11 @@
                 <div id="feedback-container" class="mb-6 text-left bg-gray-50 rounded-lg p-4 border border-gray-100 text-sm"></div>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-3">
-                    <button onclick="resetToOriginal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
-                        <i class="fa-solid fa-rotate-left mr-1.5"></i> Đề gốc
+                    <button onclick="goHome()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
+                        <i class="fa-solid fa-list mr-1.5"></i> Chọn bài khác
+                    </button>
+                    <button onclick="resetToOriginal()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
+                        <i class="fa-solid fa-rotate-left mr-1.5"></i> Làm lại
                     </button>
                     
                     <!-- AI Button -->
@@ -251,183 +274,366 @@
 
     <!-- Footer -->
     <footer class="text-center py-2 bg-white border-t border-gray-100 text-gray-400 text-[10px] flex-none">
-        <p>Hỗ trợ bởi Google Gemini</p>
+        <p>Ứng dụng ôn thi trắc nghiệm Toán THPT - Hỗ trợ bởi Google Gemini</p>
     </footer>
 
     <!-- JavaScript Logic -->
     <script>
         // ============================================================
-        // CẤU HÌNH API KEY (QUAN TRỌNG)
+        // 1. CẤU HÌNH API KEY (QUAN TRỌNG)
         // ============================================================
-        // Để tránh bị Google hủy khóa khi tải lên GitHub, hãy làm theo cách sau:
-        // 1. Vào https://aistudio.google.com/app/apikey tạo Key MỚI.
-        // 2. Chia khóa thành 2 phần và điền vào dưới đây (để đánh lừa bộ quét):
-        
-        // Ví dụ Key của bạn là: AIzaSyD...XYZ
-        // Thì điền: 
-        // const PART_1 = "AIzaSyD..."; 
-        // const PART_2 = "XYZ";
-        
-        const PART_1 = "AIzaSyBKG_pbB0Z0w0ie"; // Điền 1 nửa đầu Key vào đây (nếu muốn hardcode)
-        const PART_2 = "8PMHdJJSEvUv99_t8ww"; // Điền 1 nửa sau Key vào đây
+        const PART_1 = "AIzaSyBKG_pbB0Z0w0ie"; 
+        const PART_2 = "8PMHdJJSEvUv99_t8ww"; 
         // ============================================================
 
-        // Original Data (Source of Truth)
-        const originalData = [
+        // ============================================================
+        // 2. KHO DỮ LIỆU BÀI TẬP (COURSE DATA)
+        // ============================================================
+        const courseData = [
             {
-                id: 1,
-                topic: "Vectơ chỉ phương",
-                question: "Một vectơ chỉ phương của đường thẳng $\\begin{cases}x=2+3t\\\\ y=-3-t\\end{cases}$ là:",
-                options: [
-                    { text: "$\\vec{u}=(2;-3)$", correct: false },
-                    { text: "$\\vec{u}=(3;-1)$", correct: true },
-                    { text: "$\\vec{u}=(3;1)$", correct: false },
-                    { text: "$\\vec{u}=(3;-3)$", correct: false }
-                ],
-                hint: "Với phương trình tham số $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$, vectơ chỉ phương là $\\vec{u}=(a;b)$.",
-                rationale: "Phương trình đường thẳng có dạng $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$ với $a=3, b=-1$.<br>Do đó, vectơ chỉ phương là $\\vec{u}=(3; -1)$."
+                id: "topic_lines",
+                title: "Chủ đề 1: Phương Trình Đường Thẳng",
+                icon: "fa-ruler-combined", 
+                color: "blue",
+                locked: false, // TRẠNG THÁI: false = Mở, true = Khóa
+                description: "Vectơ chỉ phương, pháp tuyến, PT tham số, tổng quát, khoảng cách và góc.",
+                questions: [
+                    {
+                        id: 1,
+                        topic: "Vectơ chỉ phương",
+                        question: "Một vectơ chỉ phương của đường thẳng $\\begin{cases}x=2+3t\\\\ y=-3-t\\end{cases}$ là:",
+                        options: [
+                            { text: "$\\vec{u}=(2;-3)$", correct: false },
+                            { text: "$\\vec{u}=(3;-1)$", correct: true },
+                            { text: "$\\vec{u}=(3;1)$", correct: false },
+                            { text: "$\\vec{u}=(3;-3)$", correct: false }
+                        ],
+                        hint: "Với phương trình tham số $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$, vectơ chỉ phương là $\\vec{u}=(a;b)$.",
+                        rationale: "Phương trình đường thẳng có dạng $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$ với $a=3, b=-1$.<br>Do đó, vectơ chỉ phương là $\\vec{u}=(3; -1)$."
+                    },
+                    {
+                        id: 2,
+                        topic: "Điểm thuộc đường thẳng",
+                        question: "Cho đường thẳng $\\Delta: \\begin{cases}x=2-5t\\\\ y=-1+3t\\end{cases}$. Trong các điểm có toạ độ dưới đây, điểm nào nằm trên đường thẳng $\\Delta$?",
+                        options: [
+                            { text: "$(-3;-2)$", correct: false },
+                            { text: "$(2;-1)$", correct: true },
+                            { text: "$(-2;1)$", correct: false },
+                            { text: "$(-5;3)$", correct: false }
+                        ],
+                        hint: "Thay tọa độ $(x;y)$ vào hệ phương trình, nếu tìm được cùng một giá trị $t$ thì điểm đó thuộc đường thẳng. Hoặc dễ thấy với $t=0$ ta có điểm nào?",
+                        rationale: "Thay $t=0$ vào phương trình tham số, ta được $x=2$ và $y=-1$.<br>Vậy điểm $(2; -1)$ thuộc đường thẳng $\\Delta$."
+                    },
+                    {
+                        id: 3,
+                        topic: "PT tham số",
+                        question: "Trong mặt phẳng tọa độ $Oxy$, đường thẳng $d$ đi qua điểm $A(1;-2)$ và có vectơ chỉ phương $\\vec{u}=(3;5)$ có phương trình tham số là:",
+                        options: [
+                            { text: "$\\begin{cases}x=3+2t\\\\ y=5+t\\end{cases}$", correct: false },
+                            { text: "$\\begin{cases}x=3+t\\\\ y=5-2t\\end{cases}$", correct: false },
+                            { text: "$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$", correct: true },
+                            { text: "$\\begin{cases}x=1+5t\\\\ y=-2-3t\\end{cases}$", correct: false }
+                        ],
+                        hint: "Phương trình tham số đi qua $M(x_0; y_0)$ với vtcp $\\vec{u}=(a;b)$ là $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$.",
+                        rationale: "Thay tọa độ điểm đi qua $(1; -2)$ và vectơ chỉ phương $(3; 5)$ vào công thức tổng quát, ta được:<br>$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$."
+                    },
+                    {
+                        id: 4,
+                        topic: "Vectơ pháp tuyến",
+                        question: "Một vectơ pháp tuyến của đường thẳng $2x-3y+6=0$ là:",
+                        options: [
+                            { text: "$\\vec{n}=(2;-3)$", correct: true },
+                            { text: "$\\vec{n}=(2;3)$", correct: false },
+                            { text: "$\\vec{n}=(3;2)$", correct: false },
+                            { text: "$\\vec{n}=(-3;2)$", correct: false }
+                        ],
+                        hint: "Đường thẳng có phương trình tổng quát $Ax + By + C = 0$ có vectơ pháp tuyến là $\\vec{n}=(A; B)$.",
+                        rationale: "Từ phương trình $2x - 3y + 6 = 0$, ta có hệ số của $x$ là $2$ và hệ số của $y$ là $-3$.<br>Vậy vectơ pháp tuyến là $\\vec{n}=(2; -3)$."
+                    },
+                    {
+                        id: 5,
+                        topic: "Chuyển đổi VTPT sang VTCP",
+                        question: "Cho đường thẳng $\\Delta$ có phương trình tổng quát $-2x+3y-1=0$. Vectơ nào sau đây là vectơ chỉ phương của đường thẳng $\\Delta$?",
+                        options: [
+                            { text: "$(3;2)$", correct: true },
+                            { text: "$(2;3)$", correct: false },
+                            { text: "$(-3;2)$", correct: false },
+                            { text: "$(2;-3)$", correct: false }
+                        ],
+                        hint: "Nếu đường thẳng có vtpt $\\vec{n}=(A; B)$ thì vtcp là $\\vec{u}=(-B; A)$ hoặc $\\vec{u}=(B; -A)$.",
+                        rationale: "Đường thẳng có vtpt $\\vec{n}=(-2; 3)$.<br>Suy ra vtcp $\\vec{u}=(3; 2)$ (vì tích vô hướng $\\vec{n}.\\vec{u} = -2.3 + 3.2 = 0$)."
+                    },
+                    {
+                        id: 6,
+                        topic: "Điểm thuộc đường thẳng",
+                        question: "Cho đường thẳng $d: 3x+5y-15=0$. Trong các điểm sau đây, điểm nào **không** thuộc đường thẳng $d$?",
+                        options: [
+                            { text: "$M_1(5;0)$", correct: false },
+                            { text: "$M_4(-5;6)$", correct: false },
+                            { text: "$M_2(0;3)$", correct: false },
+                            { text: "$M_3(5;3)$", correct: true }
+                        ],
+                        hint: "Thay tọa độ $(x; y)$ của điểm vào phương trình. Nếu kết quả $\\neq 0$ thì điểm đó không thuộc đường thẳng.",
+                        rationale: "Thay tọa độ $M_3(5;3)$ vào vế trái phương trình:<br>$3(5) + 5(3) - 15 = 15 + 15 - 15 = 15 \\neq 0$.<br>Vậy $M_3$ không thuộc $d$."
+                    },
+                    {
+                        id: 7,
+                        topic: "Khoảng cách",
+                        question: "Khoảng cách từ điểm $M(4;-2)$ đến đường thẳng $\\Delta: x-2y+2=0$ bằng:",
+                        options: [
+                            { text: "$\\frac{2\\sqrt{5}}{5}$", correct: false },
+                            { text: "$2\\sqrt{5}$", correct: true },
+                            { text: "$2$", correct: false },
+                            { text: "$\\sqrt{5}$", correct: false }
+                        ],
+                        hint: "Công thức khoảng cách: $d(M, \\Delta) = \\frac{|Ax_0 + By_0 + C|}{\\sqrt{A^2 + B^2}}$.",
+                        rationale: "Áp dụng công thức khoảng cách:<br>$$d = \\frac{|1(4) - 2(-2) + 2|}{\\sqrt{1^2 + (-2)^2}} = \\frac{|4 + 4 + 2|}{\\sqrt{5}} = \\frac{10}{\\sqrt{5}} = 2\\sqrt{5}$$"
+                    },
+                    {
+                        id: 8,
+                        topic: "Góc giữa 2 đường thẳng",
+                        question: "Cho $\\Delta_1: x-2y+3=0$ và $\\Delta_2: -2x-y+5=0$. Số đo góc giữa hai đường thẳng này là:",
+                        options: [
+                            { text: "$30^\\circ$", correct: false },
+                            { text: "$45^\\circ$", correct: false },
+                            { text: "$90^\\circ$", correct: true },
+                            { text: "$60^\\circ$", correct: false }
+                        ],
+                        hint: "Tính tích vô hướng hai vectơ pháp tuyến $\\vec{n_1}$ và $\\vec{n_2}$. Nếu bằng 0 thì hai đường thẳng vuông góc.",
+                        rationale: "Ta có $\\vec{n_1}=(1; -2)$ và $\\vec{n_2}=(-2; -1)$.<br>Tích vô hướng: $\\vec{n_1}.\\vec{n_2} = 1.(-2) + (-2).(-1) = -2 + 2 = 0$.<br>Vì tích vô hướng bằng 0 nên hai vectơ vuông góc, suy ra góc giữa hai đường thẳng là $90^\\circ$."
+                    },
+                    {
+                        id: 9,
+                        topic: "PT tham số đi qua 2 điểm",
+                        question: "Trong mặt phẳng tọa độ $Oxy$, phương trình tham số của đường thẳng đi qua $M(1;-2)$ và $N(4;3)$ là:",
+                        options: [
+                            { text: "$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$", correct: true },
+                            { text: "$\\begin{cases}x=1+5t\\\\ y=-2-3t\\end{cases}$", correct: false },
+                            { text: "$\\begin{cases}x=3+3t\\\\ y=4+5t\\end{cases}$", correct: false },
+                            { text: "$\\begin{cases}x=4+t\\\\ y=3-2t\\end{cases}$", correct: false }
+                        ],
+                        hint: "Vectơ chỉ phương chính là vectơ $\\vec{MN} = (x_N - x_M; y_N - y_M)$.",
+                        rationale: "Vectơ chỉ phương $\\vec{u} = \\vec{MN} = (4-1; 3-(-2)) = (3; 5)$.<br>Đường thẳng đi qua $M(1; -2)$ với vtcp $(3; 5)$ có pt: $\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$."
+                    },
+                    {
+                        id: 10,
+                        topic: "PT song song",
+                        question: "Trong mặt phẳng $Oxy$, đường thẳng $\\Delta$ đi qua điểm $M(-2;0)$ và song song với đường thẳng $d: 2x-y+2=0$ có phương trình là:",
+                        options: [
+                            { text: "$2x-y=0$", correct: false },
+                            { text: "$2x-y+4=0$", correct: true },
+                            { text: "$2x+y+4=0$", correct: false },
+                            { text: "$x+2y+2=0$", correct: false }
+                        ],
+                        hint: "Hai đường thẳng song song thì có cùng vectơ pháp tuyến. Phương trình sẽ có dạng $2x - y + C = 0$ ($C \\neq 2$).",
+                        rationale: "Vì $\\Delta // d$ nên $\\Delta$ có dạng $2x - y + c = 0$.<br>Vì $M(-2; 0) \\in \\Delta$, thay tọa độ vào: $2(-2) - 0 + c = 0 \\Rightarrow -4 + c = 0 \\Rightarrow c = 4$.<br>Vậy pt là $2x - y + 4 = 0$."
+                    },
+                    {
+                        id: 11,
+                        topic: "PT tổng quát từ điểm và VTPT",
+                        question: "Đường thẳng đi qua điểm $M(2;-3)$ và nhận $\\vec{n}=(3;1)$ làm vectơ pháp tuyến có phương trình tổng quát là:",
+                        options: [
+                            { text: "$3x+y-9=0$", correct: false },
+                            { text: "$x-3y-11=0$", correct: false },
+                            { text: "$3x+y-3=0$", correct: true },
+                            { text: "$3x-y-9=0$", correct: false }
+                        ],
+                        hint: "Áp dụng công thức: $A(x - x_0) + B(y - y_0) = 0$.",
+                        rationale: "Phương trình: $3(x - 2) + 1(y - (-3)) = 0$<br>$\\Leftrightarrow 3x - 6 + y + 3 = 0$<br>$\\Leftrightarrow 3x + y - 3 = 0$."
+                    },
+                    {
+                        id: 12,
+                        topic: "PT tổng quát đi qua 2 điểm",
+                        question: "Trong mặt phẳng $Oxy$, cho hai điểm $A(-2;4)$ và $B(-6;1)$. Phương trình đường thẳng đi qua hai điểm A và B là:",
+                        options: [
+                            { text: "$3x-4y-22=0$", correct: false },
+                            { text: "$3x-4y+8=0$", correct: false },
+                            { text: "$3x-4y+22=0$", correct: true },
+                            { text: "$3x+4y-10=0$", correct: false }
+                        ],
+                        hint: "Tìm vectơ $\\vec{AB}$, suy ra vectơ pháp tuyến $\\vec{n}$, sau đó viết phương trình tổng quát.",
+                        rationale: "Ta có $\\vec{AB} = (-4; -3)$.<br>Suy ra vectơ pháp tuyến $\\vec{n} = (3; -4)$ (đảo vị trí và đổi dấu 1 thành phần).<br>Phương trình qua $A(-2; 4)$: $3(x - (-2)) - 4(y - 4) = 0$<br>$\\Leftrightarrow 3x + 6 - 4y + 16 = 0$<br>$\\Leftrightarrow 3x - 4y + 22 = 0$."
+                    }
+                ]
             },
             {
-                id: 3,
-                topic: "Phương trình tham số",
-                question: "Trong mặt phẳng tọa độ $Oxy$, đường thẳng $d$ đi qua điểm $A(1;-2)$ và có vectơ chỉ phương $\\vec{u}=(3;5)$ có phương trình tham số là:",
-                options: [
-                    { text: "$\\begin{cases}x=3+2t\\\\ y=5+t\\end{cases}$", correct: false },
-                    { text: "$\\begin{cases}x=3+t\\\\ y=5-2t\\end{cases}$", correct: false },
-                    { text: "$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$", correct: true },
-                    { text: "$\\begin{cases}x=1+5t\\\\ y=-2-3t\\end{cases}$", correct: false }
-                ],
-                hint: "Phương trình tham số đi qua $M(x_0; y_0)$ với vtcp $\\vec{u}=(a;b)$ là $\\begin{cases}x=x_0+at\\\\ y=y_0+bt\\end{cases}$.",
-                rationale: "Thay tọa độ điểm đi qua $(1; -2)$ và vectơ chỉ phương $(3; 5)$ vào công thức tổng quát, ta được:<br>$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$."
-            },
-            {
-                id: 4,
-                topic: "Vectơ pháp tuyến",
-                question: "Một vectơ pháp tuyến của đường thẳng $2x-3y+6=0$ là:",
-                options: [
-                    { text: "$\\vec{n}=(2;-3)$", correct: true },
-                    { text: "$\\vec{n}=(2;3)$", correct: false },
-                    { text: "$\\vec{n}=(3;2)$", correct: false },
-                    { text: "$\\vec{n}=(-3;2)$", correct: false }
-                ],
-                hint: "Đường thẳng có phương trình tổng quát $Ax + By + C = 0$ có vectơ pháp tuyến là $\\vec{n}=(A; B)$.",
-                rationale: "Từ phương trình $2x - 3y + 6 = 0$, ta có hệ số của $x$ là $2$ và hệ số của $y$ là $-3$.<br>Vậy vectơ pháp tuyến là $\\vec{n}=(2; -3)$."
-            },
-            {
-                id: 5,
-                topic: "Chuyển đổi VTPT sang VTCP",
-                question: "Cho đường thẳng $\\Delta$ có phương trình tổng quát $-2x+3y-1=0$. Vectơ nào sau đây là vectơ chỉ phương của đường thẳng $\\Delta$?",
-                options: [
-                    { text: "$(3;2)$", correct: true },
-                    { text: "$(2;3)$", correct: false },
-                    { text: "$(-3;2)$", correct: false },
-                    { text: "$(2;-3)$", correct: false }
-                ],
-                hint: "Nếu đường thẳng có vtpt $\\vec{n}=(A; B)$ thì vtcp là $\\vec{u}=(-B; A)$ hoặc $\\vec{u}=(B; -A)$.",
-                rationale: "Đường thẳng có vtpt $\\vec{n}=(-2; 3)$.<br>Suy ra vtcp $\\vec{u}=(3; 2)$ (vì tích vô hướng $\\vec{n}.\\vec{u} = -2.3 + 3.2 = 0$)."
-            },
-            {
-                id: 6,
-                topic: "Điểm thuộc đường thẳng",
-                question: "Cho đường thẳng $d: 3x+5y-15=0$. Trong các điểm sau đây, điểm nào **không** thuộc đường thẳng $d$?",
-                options: [
-                    { text: "$M_1(5;0)$", correct: false },
-                    { text: "$M_4(-5;6)$", correct: false },
-                    { text: "$M_2(0;3)$", correct: false },
-                    { text: "$M_3(5;3)$", correct: true }
-                ],
-                hint: "Thay tọa độ $(x; y)$ của điểm vào phương trình. Nếu kết quả $\\neq 0$ thì điểm đó không thuộc đường thẳng.",
-                rationale: "Thay tọa độ $M_3(5;3)$ vào vế trái phương trình:<br>$3(5) + 5(3) - 15 = 15 + 15 - 15 = 15 \\neq 0$.<br>Vậy $M_3$ không thuộc $d$."
-            },
-            {
-                id: 7,
-                topic: "Khoảng cách",
-                question: "Khoảng cách từ điểm $M(4;-2)$ đến đường thẳng $\\Delta: x-2y+2=0$ bằng:",
-                options: [
-                    { text: "$\\frac{2\\sqrt{5}}{5}$", correct: false },
-                    { text: "$2\\sqrt{5}$", correct: true },
-                    { text: "$2$", correct: false },
-                    { text: "$\\sqrt{5}$", correct: false }
-                ],
-                hint: "Công thức khoảng cách: $d(M, \\Delta) = \\frac{|Ax_0 + By_0 + C|}{\\sqrt{A^2 + B^2}}$.",
-                rationale: "Áp dụng công thức khoảng cách:<br>$$d = \\frac{|1(4) - 2(-2) + 2|}{\\sqrt{1^2 + (-2)^2}} = \\frac{|4 + 4 + 2|}{\\sqrt{5}} = \\frac{10}{\\sqrt{5}} = 2\\sqrt{5}$$"
-            },
-            {
-                id: 8,
-                topic: "Góc giữa 2 đường thẳng",
-                question: "Cho $\\Delta_1: x-2y+3=0$ và $\\Delta_2: -2x-y+5=0$. Số đo góc giữa hai đường thẳng này là:",
-                options: [
-                    { text: "$30^\\circ$", correct: false },
-                    { text: "$45^\\circ$", correct: false },
-                    { text: "$90^\\circ$", correct: true },
-                    { text: "$60^\\circ$", correct: false }
-                ],
-                hint: "Tính tích vô hướng hai vectơ pháp tuyến $\\vec{n_1}$ và $\\vec{n_2}$. Nếu bằng 0 thì hai đường thẳng vuông góc.",
-                rationale: "Ta có $\\vec{n_1}=(1; -2)$ và $\\vec{n_2}=(-2; -1)$.<br>Tích vô hướng: $\\vec{n_1}.\\vec{n_2} = 1.(-2) + (-2).(-1) = -2 + 2 = 0$.<br>Vì tích vô hướng bằng 0 nên hai vectơ vuông góc, suy ra góc giữa hai đường thẳng là $90^\\circ$."
-            },
-            {
-                id: 9,
-                topic: "PT tham số đi qua 2 điểm",
-                question: "Trong mặt phẳng tọa độ $Oxy$, phương trình tham số của đường thẳng đi qua $M(1;-2)$ và $N(4;3)$ là:",
-                options: [
-                    { text: "$\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$", correct: true },
-                    { text: "$\\begin{cases}x=1+5t\\\\ y=-2-3t\\end{cases}$", correct: false },
-                    { text: "$\\begin{cases}x=3+3t\\\\ y=4+5t\\end{cases}$", correct: false },
-                    { text: "$\\begin{cases}x=4+t\\\\ y=3-2t\\end{cases}$", correct: false }
-                ],
-                hint: "Vectơ chỉ phương chính là vectơ $\\vec{MN} = (x_N - x_M; y_N - y_M)$.",
-                rationale: "Vectơ chỉ phương $\\vec{u} = \\vec{MN} = (4-1; 3-(-2)) = (3; 5)$.<br>Đường thẳng đi qua $M(1; -2)$ với vtcp $(3; 5)$ có pt: $\\begin{cases}x=1+3t\\\\ y=-2+5t\\end{cases}$."
-            },
-            {
-                id: 10,
-                topic: "PT song song",
-                question: "Trong mặt phẳng $Oxy$, đường thẳng $\\Delta$ đi qua điểm $M(-2;0)$ và song song với đường thẳng $d: 2x-y+2=0$ có phương trình là:",
-                options: [
-                    { text: "$2x-y=0$", correct: false },
-                    { text: "$2x-y+4=0$", correct: true },
-                    { text: "$2x+y+4=0$", correct: false },
-                    { text: "$x+2y+2=0$", correct: false }
-                ],
-                hint: "Hai đường thẳng song song thì có cùng vectơ pháp tuyến. Phương trình sẽ có dạng $2x - y + C = 0$ ($C \\neq 2$).",
-                rationale: "Vì $\\Delta // d$ nên $\\Delta$ có dạng $2x - y + c = 0$.<br>Vì $M(-2; 0) \\in \\Delta$, thay tọa độ vào: $2(-2) - 0 + c = 0 \\Rightarrow -4 + c = 0 \\Rightarrow c = 4$.<br>Vậy pt là $2x - y + 4 = 0$."
-            },
-            {
-                id: 11,
-                topic: "PT tổng quát từ điểm và VTPT",
-                question: "Đường thẳng đi qua điểm $M(2;-3)$ và nhận $\\vec{n}=(3;1)$ làm vectơ pháp tuyến có phương trình tổng quát là:",
-                options: [
-                    { text: "$3x+y-9=0$", correct: false },
-                    { text: "$x-3y-11=0$", correct: false },
-                    { text: "$3x+y-3=0$", correct: true },
-                    { text: "$3x-y-9=0$", correct: false }
-                ],
-                hint: "Áp dụng công thức: $A(x - x_0) + B(y - y_0) = 0$.",
-                rationale: "Phương trình: $3(x - 2) + 1(y - (-3)) = 0$<br>$\\Leftrightarrow 3x - 6 + y + 3 = 0$<br>$\\Leftrightarrow 3x + y - 3 = 0$."
-            },
-            {
-                id: 12,
-                topic: "PT tổng quát đi qua 2 điểm",
-                question: "Trong mặt phẳng $Oxy$, cho hai điểm $A(-2;4)$ và $B(-6;1)$. Phương trình đường thẳng đi qua hai điểm A và B là:",
-                options: [
-                    { text: "$3x-4y-22=0$", correct: false },
-                    { text: "$3x-4y+8=0$", correct: false },
-                    { text: "$3x-4y+22=0$", correct: true },
-                    { text: "$3x+4y-10=0$", correct: false }
-                ],
-                hint: "Tìm vectơ $\\vec{AB}$, suy ra vectơ pháp tuyến $\\vec{n}$, sau đó viết phương trình tổng quát.",
-                rationale: "Ta có $\\vec{AB} = (-4; -3)$.<br>Suy ra vectơ pháp tuyến $\\vec{n} = (3; -4)$ (đảo vị trí và đổi dấu 1 thành phần).<br>Phương trình qua $A(-2; 4)$: $3(x - (-2)) - 4(y - 4) = 0$<br>$\\Leftrightarrow 3x + 6 - 4y + 16 = 0$<br>$\\Leftrightarrow 3x - 4y + 22 = 0$."
-            }
+				  "id": "hinh_hoc_10_chuong_3",
+				  "title": "Chủ đề 2: Phương Trình Đường Tròn",
+				  "icon": "fa-shapes",
+				  "color": "blue",
+				  "locked": false,
+				  "description": "Bộ câu hỏi trắc nghiệm rèn luyện kỹ năng xác định tâm, bán kính và viết phương trình đường tròn trong mặt phẳng Oxy.",
+				  "questions": [
+					{
+					  "id": 1,
+					  "topic": "Tìm tâm và bán kính",
+					  "question": "Tìm tọa độ tâm $I$ và bán kính $R$ của đường tròn $(C): (x - 1)^2 + (y + 3)^2 = 16$ là:",
+					  "options": [
+						{ "text": "$I(-1; 3), R = 4$", "correct": false },
+						{ "text": "$I(1; -3), R = 4$", "correct": true },
+						{ "text": "$I(1; -3), R = 16$", "correct": false },
+						{ "text": "$I(-1; 3), R = 16$", "correct": false }
+					  ],
+					  "hint": "So sánh với phương trình chuẩn $(x-a)^2 + (y-b)^2 = R^2$.",
+					  "rationale": "Phương trình đường tròn có dạng $(x-a)^2 + (y-b)^2 = R^2$ có tâm $I(a;b)$ và bán kính $R$.<br>Từ phương trình $(x - 1)^2 + (y + 3)^2 = 16$, ta có:<br> $a = 1$, $b = -3$, $R^2 = 16 \\Rightarrow R = 4$.<br>Vậy tâm $I(1; -3)$ và bán kính $R=4$."
+					},
+					{
+					  "id": 2,
+					  "topic": "Tìm tâm và bán kính",
+					  "question": "Tìm tọa độ tâm $I$ và bán kính $R$ của đường tròn $(C): x^2 + (y + 4)^2 = 5$ là:",
+					  "options": [
+						{ "text": "$I(0; -4), R = \\sqrt{5}$", "correct": true },
+						{ "text": "$I(0; -4), R = 5$", "correct": false },
+						{ "text": "$I(0; 4), R = \\sqrt{5}$", "correct": false },
+						{ "text": "$I(0; 4), R = 5$", "correct": false }
+					  ],
+					  "hint": "Viết lại $x^2$ thành $(x-0)^2$ để xác định $a$.",
+					  "rationale": "Phương trình có thể viết lại là: $(x - 0)^2 + (y - (-4))^2 = 5$.<br>Suy ra tâm $I(0; -4)$ và bán kính $R = \\sqrt{5}$."
+					},
+					{
+					  "id": 3,
+					  "topic": "Viết phương trình đường tròn",
+					  "question": "Đường tròn $(C)$ có tọa độ tâm $I(-2; 4)$ và bán kính $R = 4$ có phương trình là:",
+					  "options": [
+						{ "text": "$(C): (x + 2)^2 + (y - 4)^2 = 16$", "correct": true },
+						{ "text": "$(C): (x - 2)^2 + (y + 4)^2 = 16$", "correct": false },
+						{ "text": "$(C): (x + 2)^2 + (y - 4)^2 = 4$", "correct": false },
+						{ "text": "$(C): (x - 2)^2 + (y + 4)^2 = 4$", "correct": false }
+					  ],
+					  "hint": "Thay $a, b, R$ vào công thức $(x-a)^2 + (y-b)^2 = R^2$.",
+					  "rationale": "Phương trình đường tròn tâm $I(a; b)$ bán kính $R$ là $(x-a)^2 + (y-b)^2 = R^2$.<br>Thay $I(-2; 4)$ và $R=4$:<br>$(x - (-2))^2 + (y - 4)^2 = 4^2$<br>$\\Leftrightarrow (x + 2)^2 + (y - 4)^2 = 16$."
+					},
+					{
+					  "id": 4,
+					  "topic": "Viết phương trình đường tròn",
+					  "question": "Tìm phương trình của đường tròn có tâm $I(3; -4)$ và đường kính bằng 4.",
+					  "options": [
+						{ "text": "$(x - 3)^2 + (y + 4)^2 = 4$", "correct": true },
+						{ "text": "$(x + 3)^2 + (y - 4)^2 = 16$", "correct": false },
+						{ "text": "$(x + 3)^2 + (y - 4)^2 = 4$", "correct": false },
+						{ "text": "$(x - 3)^2 + (y + 4)^2 = 16$", "correct": false }
+					  ],
+					  "hint": "Tính bán kính $R$ từ đường kính ($R = d/2$).",
+					  "rationale": "Đường kính $d = 4 \\Rightarrow$ Bán kính $R = 2$.<br>Tâm $I(3; -4) \\Rightarrow a=3, b=-4$.<br>Phương trình: $(x-3)^2 + (y-(-4))^2 = 2^2 \\Leftrightarrow (x-3)^2 + (y+4)^2 = 4$."
+					},
+					{
+					  "id": 5,
+					  "topic": "Viết phương trình đường tròn",
+					  "question": "Đường tròn tâm $I(2; 0)$ và đi qua điểm $A(-1; 7)$ có phương trình là:",
+					  "options": [
+						{ "text": "$(x + 2)^2 + y^2 = \\sqrt{58}$", "correct": false },
+						{ "text": "$(x - 2)^2 + y^2 = \\sqrt{58}$", "correct": false },
+						{ "text": "$(x + 2)^2 + y^2 = 58$", "correct": false },
+						{ "text": "$(x - 2)^2 + y^2 = 58$", "correct": true }
+					  ],
+					  "hint": "Bán kính $R$ chính là độ dài đoạn thẳng $IA$.",
+					  "rationale": "Bán kính $R = IA = \\sqrt{(x_A - x_I)^2 + (y_A - y_I)^2} = \\sqrt{(-1 - 2)^2 + (7 - 0)^2} = \\sqrt{(-3)^2 + 7^2} = \\sqrt{9 + 49} = \\sqrt{58}$.<br>Suy ra $R^2 = 58$.<br>Phương trình: $(x - 2)^2 + (y - 0)^2 = 58 \\Leftrightarrow (x - 2)^2 + y^2 = 58$."
+					},
+					{
+					  "id": 6,
+					  "topic": "Viết phương trình đường tròn",
+					  "question": "Đường tròn đường kính $AB$ với $A(3; -1), B(1; -5)$ có phương trình là:",
+					  "options": [
+						{ "text": "$(x + 2)^2 + (y - 3)^2 = 5$", "correct": false },
+						{ "text": "$(x + 1)^2 + (y + 2)^2 = 17$", "correct": false },
+						{ "text": "$(x - 2)^2 + (y + 3)^2 = \\sqrt{5}$", "correct": false },
+						{ "text": "$(x - 2)^2 + (y + 3)^2 = 5$", "correct": true }
+					  ],
+					  "hint": "Tâm $I$ là trung điểm $AB$, bán kính $R = IA$.",
+					  "rationale": "Tọa độ tâm $I$ là trung điểm $AB$:<br>$x_I = \\frac{3+1}{2} = 2$; $y_I = \\frac{-1-5}{2} = -3 \\Rightarrow I(2; -3)$.<br>Bán kính $R = IA = \\sqrt{(3-2)^2 + (-1 - (-3))^2} = \\sqrt{1^2 + 2^2} = \\sqrt{5}$.<br>Vậy $R^2 = 5$.<br>Phương trình: $(x - 2)^2 + (y + 3)^2 = 5$."
+					},
+					{
+					  "id": 7,
+					  "topic": "Tìm tâm và bán kính",
+					  "question": "Bán kính $R$ của đường tròn $x^2 + y^2 - 2x + 4y + 1 = 0$ là:",
+					  "options": [
+						{ "text": "$R = 2$", "correct": true },
+						{ "text": "$R = 4$", "correct": false },
+						{ "text": "$R = 1$", "correct": false },
+						{ "text": "$R = 3$", "correct": false }
+					  ],
+					  "hint": "Xác định hệ số $a, b, c$ và dùng công thức $R = \\sqrt{a^2 + b^2 - c}$.",
+					  "rationale": "Phương trình có dạng $x^2 + y^2 - 2ax - 2by + c = 0$.<br>Ta có: $-2a = -2 \\Rightarrow a = 1$; $-2b = 4 \\Rightarrow b = -2$; $c = 1$.<br>Bán kính $R = \\sqrt{a^2 + b^2 - c} = \\sqrt{1^2 + (-2)^2 - 1} = \\sqrt{1 + 4 - 1} = \\sqrt{4} = 2$."
+					},
+					{
+					  "id": 8,
+					  "topic": "Nhận dạng phương trình",
+					  "question": "Phương trình nào là phương trình của một đường tròn?",
+					  "options": [
+						{ "text": "$x^2 + y^2 + 2x - 4y + 9 = 0$", "correct": false },
+						{ "text": "$x^2 + y^2 - 6x + 4y + 13 = 0$", "correct": false },
+						{ "text": "$2x^2 + 2y^2 - 8x - 4y - 6 = 0$", "correct": true },
+						{ "text": "$5x^2 + 4y^2 + x - 4y + 1 = 0$", "correct": false }
+					  ],
+					  "hint": "Điều kiện đường tròn: hệ số $x^2=y^2$ và $a^2 + b^2 - c > 0$.",
+					  "rationale": "Xét các đáp án:<br>A. $a=-1, b=2, c=9 \\Rightarrow R^2 = 1+4-9 = -4 < 0$ (Loại).<br>B. $a=3, b=-2, c=13 \\Rightarrow R^2 = 9+4-13 = 0$ (Là điểm, không phải đường tròn - Loại).<br>C. Chia 2 vế cho 2: $x^2 + y^2 - 4x - 2y - 3 = 0 \\Rightarrow a=2, b=1, c=-3$. $R^2 = 4+1-(-3) = 8 > 0$ (Thỏa mãn).<br>D. Hệ số của $x^2$ và $y^2$ khác nhau ($5 \\neq 4$) (Loại)."
+					}
+				  ]
+			},
+			{
+
+    id: "chuong_moi",
+
+    title: "Chủ đề 3: Ba đường conic (sắp học)",
+
+    icon: "fa-book",
+
+    color: "blue", // chọn 1 trong: blue, green, purple, red, yellow
+
+locked: true, // DEMO: Bài này đang bị khóa, học sinh không vào được
+
+    description: "",
+
+    questions: [
+
+        {
+
+            id: 1,
+
+            topic: "Tên dạng bài",
+
+            question: "Nội dung câu hỏi (dùng LaTeX $...$ cho công thức)",
+
+            options: [
+
+                { text: "Đáp án A (LaTeX)", correct: false },
+
+                { text: "Đáp án B (LaTeX)", correct: true }, // Cái nào đúng thì true
+
+                { text: "Đáp án C", correct: false },
+
+                { text: "Đáp án D", correct: false }
+
+            ],
+
+            hint: "Gợi ý cách giải",
+
+            rationale: "Lời giải chi tiết"
+
+        }
+
+        // ... tiếp tục các câu khác
+
+    ]
+
+}
         ];
+        // ============================================================
 
-        let quizData = JSON.parse(JSON.stringify(originalData));
+        // Runtime State
+        let currentTopicIndex = 0;
+        let quizData = []; // Data for CURRENT ACTIVE quiz
         let currentQuestionIndex = 0;
         let score = 0;
         let answered = false;
-        let userAnswers = new Array(quizData.length).fill(null);
+        let userAnswers = [];
         let audioCtx = null;
         let isAiMode = false;
 
+        // Elements
         const welcomeScreen = document.getElementById('welcome-screen');
+        const homeScreen = document.getElementById('home-screen');
+        const topicList = document.getElementById('topic-list');
         const quizContainer = document.getElementById('quiz-container');
         const completionScreen = document.getElementById('completion-screen');
         const questionText = document.getElementById('question-text');
@@ -449,40 +655,133 @@
         const loadingText = document.getElementById('loading-text');
         const settingsModal = document.getElementById('settings-modal');
         const apiKeyInput = document.getElementById('api-key-input');
+        const homeBtn = document.getElementById('home-btn');
+        const scoreArea = document.getElementById('score-area');
+        const topicBadge = document.getElementById('topic-badge');
+
+        // --- App Initialization ---
+        function initApp() {
+            renderTopicList();
+            welcomeScreen.classList.remove('hidden');
+            homeScreen.classList.add('hidden'); 
+            quizContainer.classList.add('hidden');
+            completionScreen.classList.add('hidden');
+            homeBtn.classList.add('hidden');
+            scoreArea.classList.add('hidden');
+        }
+
+        // New function to enter Topic List from Welcome Screen
+        function enterApp() {
+            welcomeScreen.classList.add('hidden');
+            goHome();
+        }
+
+        function renderTopicList() {
+            topicList.innerHTML = '';
+            courseData.forEach((topic, index) => {
+                const card = document.createElement('div');
+                const colorClass = getColorClasses(topic.color || 'blue');
+                
+                // Logic for Locked State
+                const isLocked = topic.locked === true;
+                let cardClasses = `topic-card bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden flex flex-col h-full relative`;
+                
+                if (isLocked) {
+                    cardClasses += ' locked'; // Add locked style
+                } else {
+                    cardClasses += ' cursor-pointer'; // Add pointer cursor if clickable
+                    card.onclick = () => startTopic(index);
+                }
+                
+                card.className = cardClasses;
+                
+                // Icon and Action Text based on Lock State
+                const actionText = isLocked ? 'Sắp mở <i class="fa-solid fa-lock ml-1"></i>' : 'Làm bài <i class="fa-solid fa-arrow-right ml-1"></i>';
+                const actionClass = isLocked ? 'text-gray-400' : `${colorClass.text} group-hover:underline`;
+                const iconColor = isLocked ? 'bg-gray-200 text-gray-400' : `${colorClass.lightBg} ${colorClass.text}`;
+                const titleColor = isLocked ? 'text-gray-500' : 'text-gray-800';
+
+                card.innerHTML = `
+                    <div class="h-2 w-full ${isLocked ? 'bg-gray-300' : colorClass.bg}"></div>
+                    <div class="p-5 flex-grow">
+                        <div class="flex items-center mb-3">
+                            <div class="w-10 h-10 rounded-full ${iconColor} flex items-center justify-center mr-3 text-lg">
+                                <i class="fa-solid ${isLocked ? 'fa-lock' : (topic.icon || 'fa-book')}"></i>
+                            </div>
+                            <h3 class="font-bold ${titleColor} text-lg leading-tight">${topic.title}</h3>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-4 line-clamp-2">${topic.description}</p>
+                    </div>
+                    <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-xs font-semibold text-gray-500">
+                        <span><i class="fa-solid fa-list-ol mr-1"></i> ${topic.questions.length} câu hỏi</span>
+                        <span class="${actionClass}">${actionText}</span>
+                    </div>
+                `;
+                topicList.appendChild(card);
+            });
+        }
+
+        function getColorClasses(color) {
+            const map = {
+                blue: { bg: 'bg-blue-500', lightBg: 'bg-blue-100', text: 'text-blue-600' },
+                green: { bg: 'bg-green-500', lightBg: 'bg-green-100', text: 'text-green-600' },
+                purple: { bg: 'bg-purple-500', lightBg: 'bg-purple-100', text: 'text-purple-600' },
+                red: { bg: 'bg-red-500', lightBg: 'bg-red-100', text: 'text-red-600' },
+                yellow: { bg: 'bg-yellow-500', lightBg: 'bg-yellow-100', text: 'text-yellow-600' }
+            };
+            return map[color] || map.blue;
+        }
+
+        function goHome() {
+            homeScreen.classList.remove('hidden');
+            quizContainer.classList.add('hidden');
+            completionScreen.classList.add('hidden');
+            homeBtn.classList.add('hidden');
+            scoreArea.classList.add('hidden');
+            isAiMode = false;
+        }
+
+        function startTopic(index) {
+            // Prevent starting if locked (double check logic)
+            if (courseData[index].locked) return;
+
+            currentTopicIndex = index;
+            // Clone data to avoid mutating original
+            quizData = JSON.parse(JSON.stringify(courseData[index].questions));
+            isAiMode = false;
+            
+            // UI Updates
+            homeScreen.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            homeBtn.classList.remove('hidden');
+            scoreArea.classList.remove('hidden');
+            topicBadge.textContent = courseData[index].title;
+            aiIndicator.classList.add('hidden');
+            
+            startQuiz();
+        }
 
         // --- Settings Logic ---
         document.addEventListener('DOMContentLoaded', () => {
             const savedKey = localStorage.getItem('gemini_api_key');
             if(savedKey) apiKeyInput.value = savedKey;
+            initApp();
         });
 
-        function openSettings() {
-            settingsModal.classList.remove('hidden');
-        }
-
-        function closeSettings() {
-            settingsModal.classList.add('hidden');
-        }
-
+        function openSettings() { settingsModal.classList.remove('hidden'); }
+        function closeSettings() { settingsModal.classList.add('hidden'); }
         function saveApiKey() {
             const key = apiKeyInput.value.trim();
             if(key) {
                 localStorage.setItem('gemini_api_key', key);
-                alert('Đã lưu API Key! Bạn có thể bắt đầu dùng tính năng AI.');
+                alert('Đã lưu API Key!');
                 closeSettings();
-            } else {
-                alert('Vui lòng nhập API Key.');
-            }
+            } else { alert('Vui lòng nhập API Key.'); }
         }
-
         function getEffectiveApiKey() {
-            // Priority 1: Key from LocalStorage (User entered)
             const localKey = localStorage.getItem('gemini_api_key');
             if(localKey) return localKey;
-
-            // Priority 2: Hardcoded Key (If teacher filled it)
             if(PART_1 && PART_2) return PART_1 + PART_2;
-
             return null;
         }
 
@@ -493,15 +792,12 @@
             }
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         }
-
         function playSound(type) {
             initAudio();
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
-            
             if (type === 'correct') {
-                const freqs = [523.25, 659.25, 783.99, 1046.50];
-                freqs.forEach((f, i) => {
+                [523.25, 659.25, 783.99].forEach((f, i) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'sine'; osc.frequency.value = f;
@@ -512,37 +808,24 @@
                     osc.start(now); osc.stop(now + 1.5);
                 });
             } else {
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.type = 'triangle';
-                oscillator.frequency.setValueAtTime(200, now);
-                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.4);
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                gainNode.gain.setValueAtTime(0, now);
-                gainNode.gain.linearRampToValueAtTime(0.2, now + 0.05);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                oscillator.start(now); oscillator.stop(now + 0.5);
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.2, now + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now); osc.stop(now + 0.5);
             }
         }
 
+        // --- Quiz Logic ---
         function startQuiz() {
             initAudio();
-            welcomeScreen.classList.add('hidden');
-            quizContainer.classList.remove('hidden');
-            completionScreen.classList.add('hidden');
-            
-            if(isAiMode) aiIndicator.classList.remove('hidden');
-            else aiIndicator.classList.add('hidden');
-
             totalQNum.textContent = quizData.length;
             totalHeader.textContent = quizData.length;
-            
             currentQuestionIndex = 0;
             score = 0;
             userAnswers = new Array(quizData.length).fill(null);
             scoreDisplay.textContent = '0';
-            
             loadQuestion();
         }
 
@@ -557,7 +840,6 @@
             hintBox.classList.add('hidden');
             rationaleBox.classList.add('hidden');
             wrongBox.classList.add('hidden');
-            
             prevBtn.classList.toggle('hidden', currentQuestionIndex === 0);
 
             if (answered) {
@@ -579,13 +861,12 @@
 
             questionText.innerHTML = data.question;
             document.getElementById('hint-text').innerHTML = data.hint;
-            
             optionsContainer.innerHTML = '';
+            
             data.options.forEach((opt, idx) => {
                 const btn = document.createElement('div');
                 let cls = 'option-card bg-white border-2 border-gray-100 rounded-lg p-3 flex items-center shadow-sm hover:shadow-md transition-all';
                 let icon = '';
-                
                 if (answered) {
                     cls += ' disabled';
                     if (opt.correct) {
@@ -596,7 +877,6 @@
                         icon = '<i class="fa-solid fa-circle-xmark fa-lg text-red-600 ml-auto"></i>';
                     }
                 }
-
                 btn.className = cls;
                 btn.onclick = () => selectAndCheck(idx);
                 btn.innerHTML = `
@@ -606,7 +886,6 @@
                 `;
                 optionsContainer.appendChild(btn);
             });
-
             if(window.MathJax) MathJax.typesetPromise();
         }
 
@@ -614,9 +893,7 @@
             if (answered) return;
             answered = true;
             userAnswers[currentQuestionIndex] = index;
-            
-            const isCorrect = quizData[currentQuestionIndex].options[index].correct;
-            if (isCorrect) {
+            if (quizData[currentQuestionIndex].options[index].correct) {
                 score++;
                 playSound('correct');
             } else {
@@ -654,32 +931,32 @@
             document.getElementById('total-questions-final').textContent = quizData.length;
             progressBar.style.width = '100%';
 
-            // Generate Feedback
+            // Feedback Logic
             let weakTopics = new Set();
             quizData.forEach((q, idx) => {
                 const ansIdx = userAnswers[idx];
                 if (ansIdx === null || !q.options[ansIdx].correct) weakTopics.add(q.topic);
             });
-
             let html = '';
-            if (score >= 9) html += `<div class="text-green-700 mb-4 font-bold text-base"><i class="fa-solid fa-star mr-2"></i>Xuất sắc!</div>`;
-            else if (score >= 7) html += `<div class="text-blue-700 mb-4 font-bold text-base"><i class="fa-solid fa-thumbs-up mr-2"></i>Khá tốt!</div>`;
-            else html += `<div class="text-red-600 mb-4 font-bold text-base"><i class="fa-solid fa-book-open mr-2"></i>Cần cố gắng hơn!</div>`;
-
+            if (score >= quizData.length * 0.9) html += `<div class="text-green-700 mb-2 font-bold">Xuất sắc!</div>`;
+            else if (score >= quizData.length * 0.5) html += `<div class="text-blue-700 mb-2 font-bold">Khá tốt!</div>`;
+            else html += `<div class="text-red-600 mb-2 font-bold">Cần cố gắng!</div>`;
+            
             if (weakTopics.size > 0) {
-                html += `<div class="mt-4 pt-4 border-t border-gray-200"><p class="font-bold mb-2">Cần ôn tập:</p><ul class="space-y-2">`;
+                html += `<div class="mt-4 pt-4 border-t border-gray-200"><p class="font-bold mb-2 text-sm">Cần ôn tập:</p><ul class="space-y-1">`;
                 weakTopics.forEach(t => html += `<li class="bg-gray-50 p-2 rounded text-xs"><i class="fa-solid fa-arrow-right text-red-400 mr-2"></i>${t}</li>`);
                 html += `</ul></div>`;
-            } else {
-                html += `<div class="mt-4 pt-4 border-t text-sm text-gray-600">Bạn đã làm đúng tất cả!</div>`;
             }
             feedbackContainer.innerHTML = html;
         }
 
         function resetToOriginal() {
-            quizData = JSON.parse(JSON.stringify(originalData));
+            // Restore original data of the CURRENT topic
+            quizData = JSON.parse(JSON.stringify(courseData[currentTopicIndex].questions));
             isAiMode = false;
+            aiIndicator.classList.add('hidden');
             completionScreen.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
             startQuiz();
         }
 
@@ -687,42 +964,39 @@
         async function generateAIQuiz() {
             const key = getEffectiveApiKey();
             if(!key) {
-                alert("Vui lòng nhập API Key trong phần Cài đặt (nút Bánh răng) để sử dụng tính năng này.");
+                alert("Vui lòng nhập API Key để sử dụng.");
                 openSettings();
                 return;
             }
 
             loadingScreen.classList.remove('hidden');
-            
-            // Animation Text
-            const msgs = ["Đang đọc hiểu kiến thức...", "Đang thay đổi số liệu...", "Đang tính toán đáp án...", "Đang kiểm tra LaTeX..."];
+            const msgs = ["Đang đọc hiểu đề bài...", "Đang tạo số liệu mới...", "Đang tính toán đáp án...", "Kiểm tra LaTeX..."];
             let i = 0;
             const interval = setInterval(() => { loadingText.innerText = msgs[i++ % msgs.length]; }, 1500);
 
             try {
-                // Construct Prompt
-                const prompt = `
-                    Act as a Math Teacher in Vietnam.
-                    I have a JSON list of ${originalData.length} math questions (Grade 10 - Line Equations).
-                    
-                    TASK: Generate a NEW set of ${originalData.length} questions based on the list below.
-                    
-                    STRICT RULES:
-                    1. For EACH question in the source, create a clone that tests the SAME concept/topic.
-                    2. CHANGE THE NUMBERS/COORDINATES/EQUATIONS. Do NOT reuse the exact same numbers.
-                    3. Calculate the correct answer accurately for the new numbers.
-                    4. Keep the output format exactly valid JSON.
-                    5. Output JSON structure: [{"id": 1, "topic": "...", "question": "LaTeX string", "options": [{"text": "LaTeX", "correct": boolean}...], "hint": "...", "rationale": "..."}]
-                    6. Use LaTeX ($...$) for all math expressions.
-                    7. Language: Vietnamese.
-                    8. Do NOT return markdown blocks (no \`\`\`json). Just the raw JSON array.
+                // Get Current Topic Questions as Source
+                const currentSource = courseData[currentTopicIndex].questions;
 
-                    Source Questions:
-                    ${JSON.stringify(originalData)}
+                const prompt = `
+                    Act as a Math Teacher.
+                    I have a JSON list of ${currentSource.length} math questions.
+                    
+                    TASK: Generate a NEW set of ${currentSource.length} questions based on this list.
+                    STRICT RULES:
+                    1. Create clones testing the SAME concept/topic for each question.
+                    2. CHANGE NUMBERS/COORDINATES.
+                    3. Calculate correct answers accurately.
+                    4. Output ONLY valid JSON array: [{"id": 1, "topic": "...", "question": "LaTeX string", "options": [{"text": "LaTeX", "correct": boolean}...], "hint": "...", "rationale": "..."}]
+                    5. Use LaTeX ($...$).
+                    6. Language: Vietnamese.
+                    7. NO markdown.
+
+                    Source:
+                    ${JSON.stringify(currentSource)}
                 `;
 
-                // Call Google Gemini API
-                // Using gemini-2.5-flash which is stable
+                // Use gemini-2.5-flash-preview-09-2025 as required
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -730,31 +1004,27 @@
                 });
 
                 const result = await response.json();
-                
                 if (result.error) throw new Error(result.error.message);
 
                 let rawText = result.candidates[0].content.parts[0].text;
                 rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-
                 const newQuestions = JSON.parse(rawText);
 
                 if (Array.isArray(newQuestions) && newQuestions.length > 0) {
                     quizData = newQuestions;
-                    isAiMode = true; 
-                    
+                    isAiMode = true;
+                    aiIndicator.classList.remove('hidden');
                     clearInterval(interval);
                     loadingScreen.classList.add('hidden');
-                    
+                    completionScreen.classList.add('hidden');
+                    quizContainer.classList.remove('hidden');
                     startQuiz();
-                } else {
-                    throw new Error("Dữ liệu trả về không đúng định dạng.");
-                }
+                } else { throw new Error("Dữ liệu lỗi."); }
 
             } catch (e) {
                 clearInterval(interval);
                 loadingScreen.classList.add('hidden');
-                console.error(e);
-                alert("Lỗi khi tạo đề: " + e.message + "\n\nVui lòng thử lại sau.");
+                alert("Lỗi: " + e.message);
             }
         }
     </script>
